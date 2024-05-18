@@ -1,0 +1,4 @@
+---- connect rassp:
+- Wifi: ssh pi@raspberrypi
+- LAN: ssh pi@192.168.137.106
+u can find this ip with cmd: ping raspberrypi

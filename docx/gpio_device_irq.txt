@@ -1,0 +1,139 @@
+#include <linux/module.h>
+#include <linux/kernel.h>
+#include <linux/init.h>
+#include <linux/interrupt.h>
+#include <linux/gpio.h>
+#include <linux/irq.h>
+#include <linux/fs.h>
+#include <linux/uaccess.h>
+#include <linux/wait.h>
+#include <linux/poll.h>
+#include <linux/fcntl.h>
+#include <linux/sched.h>
+
+#define GPIO_NUMBER 17  // Change this to your GPIO number
+#define DEVICE_NAME "gpio_irq_device"
+
+static unsigned int gpio_irq_number;
+static unsigned int gpio_pin = GPIO_NUMBER;
+static char *gpio_desc = "GPIO Interrupt";
+static int device_open_count = 0;
+static int major_number;
+static DECLARE_WAIT_QUEUE_HEAD(wait_queue);
+static int flag = 0;
+
+static irqreturn_t gpio_irq_handler(int irq, void *dev_id)
+{
+    flag = 1;
+    wake_up_interruptible(&wait_queue);
+    pr_info("GPIO Interrupt: Interrupt occurred!\n");
+    return IRQ_HANDLED;
+}
+
+static ssize_t device_read(struct file *file, char __user *buffer, size_t length, loff_t *offset)
+{
+    wait_event_interruptible(wait_queue, flag != 0);
+    flag = 0;
+    return 0;
+}
+
+static int device_open(struct inode *inode, struct file *file)
+{
+    if (device_open_count > 0)
+        return -EBUSY;
+    
+    device_open_count++;
+    try_module_get(THIS_MODULE);
+    return 0;
+}
+
+static int device_release(struct inode *inode, struct file *file)
+{
+    device_open_count--;
+    module_put(THIS_MODULE);
+    return 0;
+}
+
+static struct file_operations fops = {
+    .open = device_open,
+    .release = device_release,
+    .read = device_read,
+};
+
+static int __init gpio_irq_init(void)
+{
+    int result;
+
+    pr_info("GPIO Interrupt: Initializing\n");
+
+    // Register the character device,dynamically allocate major_number
+    major_number = register_chrdev(0, DEVICE_NAME, &fops);
+    if (major_number < 0) {
+        pr_info("GPIO Interrupt: Failed to register a major number\n");
+        return major_number;
+    }
+    pr_info("GPIO Interrupt: Registered correctly with major number %d\n", major_number);
+
+    // Request the GPIO
+    if (!gpio_is_valid(gpio_pin)) {
+        pr_info("GPIO Interrupt: Invalid GPIO\n");
+        unregister_chrdev(major_number, DEVICE_NAME);
+        return -ENODEV;
+    }
+
+    gpio_request(gpio_pin, gpio_desc);
+    gpio_direction_input(gpio_pin);
+
+    // Get the IRQ number for the GPIO
+    gpio_irq_number = gpio_to_irq(gpio_pin);
+
+    if (gpio_irq_number < 0) {
+        pr_info("GPIO Interrupt: Failed to get IRQ number\n");
+        gpio_free(gpio_pin);
+        unregister_chrdev(major_number, DEVICE_NAME);
+        return gpio_irq_number;
+    }
+
+    pr_info("GPIO Interrupt: Mapped to IRQ %d\n", gpio_irq_number);
+
+    // Request the interrupt line
+    result = request_irq(gpio_irq_number,
+                         (irq_handler_t) gpio_irq_handler,
+                         IRQF_TRIGGER_RISING,
+                         "gpio_irq_handler",
+                         NULL);
+
+    if (result) {
+        pr_info("GPIO Interrupt: Failed to request IRQ\n");
+        gpio_free(gpio_pin);
+        unregister_chrdev(major_number, DEVICE_NAME);
+        return result;
+    }
+
+    pr_info("GPIO Interrupt: Module loaded\n");
+    return 0;
+}
+
+static void __exit gpio_irq_exit(void)
+{
+    pr_info("GPIO Interrupt: Exiting\n");
+
+    // Free the IRQ
+    free_irq(gpio_irq_number, NULL);
+
+    // Free the GPIO
+    gpio_free(gpio_pin);
+
+    // Unregister the character device
+    unregister_chrdev(major_number, DEVICE_NAME);
+
+    pr_info("GPIO Interrupt: Module unloaded\n");
+}
+
+module_init(gpio_irq_init);
+module_exit(gpio_irq_exit);
+
+MODULE_LICENSE("GPL");
+MODULE_AUTHOR("Your Name");
+MODULE_DESCRIPTION("A GPIO Interrupt Module with user-space notification");
+MODULE_VERSION("0.1");
