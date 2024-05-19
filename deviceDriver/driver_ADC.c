@@ -7,8 +7,8 @@
 #include<linux/types.h> //dev_t
 #include<linux/device.h>
 
-#defind DRIVER_NAME "driver_ADC"
-#defind DRIVER_CLASS "MyModuleClass"
+#define DRIVER_NAME "driver_ADC"
+#define DRIVER_CLASS "MyModuleClass"
 
 static dev_t my_device_nr;
 static struct class *my_class;
@@ -50,7 +50,7 @@ static int driverADC_init(void){
 	printk("Init driver ADC \n");
 	
 	//register driver
-	if( (alloc_chrdev_region(&my_device_nr,0,1,DRIVER_NAME) <0 )
+	if( (alloc_chrdev_region(&my_device_nr,0,1,DRIVER_NAME) <0 ))
 	{ printk("Device register fail\n");
 		return -1;
 	}
@@ -85,7 +85,7 @@ static int driverADC_exit(void){
 	cdev_del(&my_device); //
 	device_destroy(my_class, my_device_nr); // delete device
 	class_destroy(my_class); //delete class
-	unregister_chrdev_region(my_device_nr,1) //delete minor
+	unregister_chrdev_region(my_device_nr,1); //delete minor
 	return 0;
 }
 
