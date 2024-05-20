@@ -1,4 +1,4 @@
-obj-m:=hello_driver.o
+obj-m:=driver_I2C.o
 KDIR :=/lib/modules/$(shell uname -r)/build
 PWD :=$(shell pwd)
 default:
