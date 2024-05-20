@@ -14,13 +14,6 @@ static dev_t my_device_nr;
 static struct class *my_class;
 static struct cdev my_device;	//why need?
 
-static struct file_operations fops = {
-	.owner = THIS_MODULE,
-	.open = driverADC_open,
-	.release = driverADC_close,
-	.read = driverADC_read,
-	.write = driverADC_write
-};
 
 static int driverADC_open(struct inode *device_file, struct file *instance){
 	printk("device open was called\n");
@@ -45,6 +38,14 @@ static ssize_t driverADC_write(struct file *File, const char *user_buff, size_t 
 	
 	return 0;
 }
+
+static struct file_operations fops = {
+	.owner = THIS_MODULE,
+	.open = driverADC_open,
+	.release = driverADC_close,
+	.read = driverADC_read,
+	.write = driverADC_write
+};
 
 static int driverADC_init(void){
 	printk("Init driver ADC \n");

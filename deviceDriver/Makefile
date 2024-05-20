@@ -1,5 +1,5 @@
-obj-m := driver_ADC.o
-KDIR := /lib/modules/$(shell uname -r)/build
-PWD := $(shell pwd)
+obj-m:=hello_driver.o
+KDIR :=/lib/modules/$(shell uname -r)/build
+PWD :=$(shell pwd)
 default:
 	$(MAKE) -C $(KDIR) M=$(PWD) modules
