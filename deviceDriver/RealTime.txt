@@ -1,0 +1,80 @@
+// Thời gian thực
+#include <wiringPi.h>
+#include <wiringPiSPI.h>  // Max7219
+#include <wiringPiI2C.h>  //DS3231
+#include <stdio.h>
+#include <stdint.h> // for uint8_t format
+#include <time.h>  //lien quan den tgian
+
+#define channel 0
+void SendData(uint8_t address, uint8_t value)
+{
+    uint8_t data[2];
+    data[0]=address;
+    data[1]=value;
+    wiringPiSPIDataRW(channel, data, 2); 
+}
+
+void Init_max7219(void)
+{
+    //decode mode 0x09F
+    SendData(0x09, 0xFF);
+    //intensity
+    SendData(0x0A, 0x08);
+    //scan limit
+    SendData(0x0B, 7);
+    //no shutdown, display test off
+    SendData(0x0C, 1);
+    SendData(0x0F, 0);
+}
+
+
+
+uint8_t dec2hex(uint8_t d)
+{
+    uint8_t h;
+    h=(d/10<<4)|(d%10);
+    return h;
+}
+uint8_t hex2dec(uint8_t h)
+{
+    uint8_t dec;
+    dec=10*(h>>4)+(h&0x0F);
+    return dec;
+}
+
+struct tm read_ds33231_time(int a)
+{
+    struct tm ds_time;
+    ds_time.tm_sec = hex2dec(wiringPiI2CReadReg8(a, 0x00));
+    ds_time.tm_min = hex2dec(wiringPiI2CReadReg8(a, 0x01));
+    ds_time.tm_hour = hex2dec(wiringPiI2CReadReg8(a, 0x02));
+    return ds_time;
+}
+
+
+int main(void)
+{
+    //setup SPI interface
+    wiringPiSPISetup(channel,8000000);
+    // setup operational mode for max7219
+    Init_max7219();
+    //setup I2C interface
+    int ds3231 = wiringPiI2CSetup(0x68);
+
+    //Read raspberry time
+    time_t T=time(NULL);
+    struct tm tm = *localtime(&T);
+
+    while (1)
+    {
+        time_t T=time(NULL);
+        struct tm tm = *localtime(&T);
+        read_ds33231_time(ds3231);
+        printf("System Date is: %02d/%02d/%02d\n",tm.tm_mday, tm.tm_mon+1, tm.tm_year+1900);
+        printf("System Time is: %02d:%02d:%02d\n",tm.tm_hour, tm.tm_min, tm.tm_sec);
+
+        delay(1000);
+    }
+    return 0;
+}
