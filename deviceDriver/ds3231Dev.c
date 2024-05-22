@@ -4,8 +4,9 @@
 	Function: set_time,
 				read_time (optional mode read)
 
-	Preference: SMBus, I2C, wiringPiI2C
+	Preference: SMBus, I2C
 		https://www.kernel.org/doc/html/v5.5/i2c/smbus-protocol.html
+		https://www.kernel.org/doc/html/latest/i2c/writing-clients.html
 */
 
 
@@ -15,7 +16,7 @@
 #include <linux/i2c.h>
 #include <linux/delay.h>
 
-#define DRIVER_NAME "mpu6050_driver"
+#define DRIVER_NAME "ds3231_driver"
 
 #define MPU6050_ADDR 0x68
 #define MPU6050_REG_ACCEL_XOUT_H 0x3B
@@ -81,6 +82,7 @@ static const struct i2c_device_id mpu6050_id[] = {
     { "mpu6050", 0 },
     { }
 };
+
 MODULE_DEVICE_TABLE(i2c, mpu6050_id);
 
 static struct i2c_driver mpu6050_driver = {
