@@ -6,6 +6,7 @@
 #include<linux/proc_fs.h>
 #include<linux/types.h> //dev_t
 #include<linux/device.h>
+#include<linux/cdev.h>	//assign the identifier to char device
 
 #define DRIVER_NAME "driver_ADC"
 #define DRIVER_CLASS "MyModuleClass"
