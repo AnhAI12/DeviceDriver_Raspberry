@@ -8,6 +8,7 @@
 		https://www.kernel.org/doc/html/v5.5/i2c/smbus-protocol.html
 		https://www.kernel.org/doc/html/latest/i2c/writing-clients.html
 		https://linux-kernel-labs.github.io/refs/heads/master/labs/device_drivers.html
+        https://www.kernel.org/doc/html/v4.12/driver-api/i2c.html
 	Function:
 		i2c_smbus_write_byte_data(client, reg, value);
 		i2c_smbus_read_i2c_block_data(struct i2c_client *client,
@@ -145,7 +146,7 @@ static long ds3231_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
             break;
         case DS3231_IOCTL_READ:
             ds3231_read( &buff);
-            ret = copy_to_user((tm*)arg, &buff, sizeof(tm))
+            ret = copy_to_user((tm*)arg, &buff, sizeof(tm));
             break;
         default:
             return -EINVAL;
@@ -184,7 +185,7 @@ static int ds3231_probe(struct i2c_client *client, const struct i2c_device_id *i
 
 	// ds3231_client = client;
     //initialize sensor
-    printk("ds3231 driver probe\n")
+    printk("ds3231 driver probe\n");
 
     return 0;
 }
@@ -262,7 +263,7 @@ static int __init ds3231_init(void)
     etx_i2c_adapter = i2c_get_adapter(I2C_BUS_AVAILABLE);
 
 	if(etx_i2c_adapter != NULL) {
-		ds3231_client = i2c_acpi_new_device(etx_i2c_adapter, &ds3231_i2c_board_info);
+		ds3231_client = i2c_new_device(etx_i2c_adapter, &ds3231_i2c_board_info);
 		if(ds3231_client != NULL) {
 			if(i2c_add_driver(&ds3231_driver) != -1) {
 				ret = 0;
