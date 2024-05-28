@@ -180,15 +180,15 @@ static struct file_operations fops = {
     // .write = driver_write,
 };
 
-static int ds3231_probe(struct i2c_client *client, const struct i2c_device_id *id)
-{
+// static int ds3231_probe(struct i2c_client *client, const struct i2c_device_id *id)
+// {
 
-	// ds3231_client = client;
-    //initialize sensor
-    printk("ds3231 driver probe\n");
+// 	// ds3231_client = client;
+//     //initialize sensor
+//     printk("ds3231 driver probe\n");
 
-    return 0;
-}
+//     return 0;
+// }
 
 static void ds3231_remove(struct i2c_client *client)
 {
@@ -219,7 +219,7 @@ static struct i2c_driver ds3231_driver = {
         .name   = DRIVER_NAME,
         .owner  = THIS_MODULE,
     },
-    .probe      = ds3231_probe,	//bind to device
+    // .probe      = ds3231_probe,	//bind to device
     .remove     = ds3231_remove,
     .id_table   = ds3231_id,
 };
@@ -263,7 +263,7 @@ static int __init ds3231_init(void)
     etx_i2c_adapter = i2c_get_adapter(I2C_BUS_AVAILABLE);
 
 	if(etx_i2c_adapter != NULL) {
-		ds3231_client = i2c_new_device(etx_i2c_adapter, &ds3231_i2c_board_info);
+		ds3231_client = i2c_acpi_new_device(etx_i2c_adapter,0, &ds3231_i2c_board_info);
 		if(ds3231_client != NULL) {
 			if(i2c_add_driver(&ds3231_driver) != -1) {
 				ret = 0;
