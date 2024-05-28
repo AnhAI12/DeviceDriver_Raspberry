@@ -31,6 +31,7 @@
 #include <linux/uaccess.h>
 #include<linux/cdev.h>	//assign the identifier to char device
 #include<linux/ioctl.h> //ioctl
+#include "ds3231Dev.h"
 
 #define DRIVER_NAME "ds3231_driver"
 #define CLASS_NAME "ds3231"
@@ -39,14 +40,6 @@
 // i2c slave address of the DS3231 chip
 #define DS3231_I2C_ADDR             0x68
 #define I2C_BUS_AVAILABLE           1
-// timekeeping registers
-#define DS3231_SEC_ADDR         0x00
-#define DS3231_MIN_ADDR         0x01
-#define DS3231_HOUR_ADDR        0x02
-#define DS3231_DAY_ADDR         0x03
-#define DS3231_DATE_ADDR        0x04
-#define DS3231_MONTH_ADDR       0x05
-#define DS3231_YEAR_ADDR        0x06
 
 // IOCTL commands
 #define DS3231_IOCTL_MAGIC 'm'
@@ -77,74 +70,77 @@ uint8_t hex2dec(uint8_t data)
 }
 
 
-static int driver_read(struct file *File, int *user_buffer, int mode)
-{
-    uint8_t buf[7];
-
-    switch (mode)
-    {
-    case TIME_MODE:
-        //second
-        buf[0] = hex2dec(i2c_smbus_read_byte_data(ds3231_client, DS3231_SEC_ADDR));
-        //min
-        buf[1] = hex2dec(i2c_smbus_read_byte_data(ds3231_client, DS3231_MIN_ADDR));
-        //hour
-        buf[2] = hex2dec(i2c_smbus_read_byte_data(ds3231_client, DS3231_HOUR_ADDR));
-        break;
-
-    default:
-        break;
-    }
-    //truyen dia chi
-     if (copy_to_user(user_buffer, buf, sizeof(buf))) {
-        return -EFAULT;
-    }
-
-    return 1;
-}
-
-static int driver_write(struct file *File, int user_buffer[], int mode)
-{
-    uint8_t buf[7];
-
-    switch (mode)
-    {
-    case TIME_MODE:
-        //second
-        i2c_smbus_write_byte_data(ds3231_client, DS3231_SEC_ADDR, user_buffer[0]);
-        //min
-        i2c_smbus_write_byte_data(ds3231_client, DS3231_MIN_ADDR, user_buffer[1]);
-        //hour
-        i2c_smbus_write_byte_data(ds3231_client, DS3231_HOUR_ADDR, user_buffer[2]);
-        break;
-
-    default:
-        return 0;
-        break;
-    }
-    return 1;
-}
-// static long ds3231_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+// static int driver_read(struct file *File, int *user_buffer, int mode)
 // {
-//     int data;
+//     uint8_t buf[7];
 
-//     switch (cmd) {
-//         case DS3231_IOCTL_WRITE:
-//             data = ds3231_write(ds3231_client, 0);
-//             break;
-//         case DS3231_IOCTL_READ:
-//             data = ds3231_read(ds3231_client, 1);
-//             break;
-//         default:
-//             return -EINVAL;
+//     switch (mode)
+//     {
+//     case TIME_MODE:
+//         //second
+//         buf[0] = hex2dec(i2c_smbus_read_byte_data(ds3231_client, DS3231_SEC_ADDR));
+//         //min
+//         buf[1] = hex2dec(i2c_smbus_read_byte_data(ds3231_client, DS3231_MIN_ADDR));
+//         //hour
+//         buf[2] = hex2dec(i2c_smbus_read_byte_data(ds3231_client, DS3231_HOUR_ADDR));
+//         break;
+
+//     default:
+//         break;
 //     }
-
-//     if (copy_to_user((int __user *)arg, &data, sizeof(data))) {
+//     //truyen dia chi
+//      if (copy_to_user(user_buffer, buf, sizeof(buf))) {
 //         return -EFAULT;
 //     }
 
-//     return 0;
+//     return 1;
 // }
+
+// static int driver_write(struct file *File, int user_buffer[], int mode)
+// {
+//     uint8_t buf[7];
+
+//     switch (mode)
+//     {
+//     case TIME_MODE:
+//         //second
+//         i2c_smbus_write_byte_data(ds3231_client, DS3231_SEC_ADDR, user_buffer[0]);
+//         //min
+//         i2c_smbus_write_byte_data(ds3231_client, DS3231_MIN_ADDR, user_buffer[1]);
+//         //hour
+//         i2c_smbus_write_byte_data(ds3231_client, DS3231_HOUR_ADDR, user_buffer[2]);
+//         break;
+
+//     default:
+//         return 0;
+//         break;
+//     }
+//     return 1;
+// }
+static long ds3231_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+{
+    int ret=-1;
+    int data;
+    tm buff;
+
+    switch (cmd) {
+        case DS3231_IOCTL_WRITE:
+            ret = copy_from_user(&buff, (tm*) arg, sizeof(tm))
+            data = ds3231_write(ds3231_client, 0);
+            break;
+        case DS3231_IOCTL_READ:
+            data = ds3231_read(ds3231_client, 1);
+            break;
+        default:
+            return -EINVAL;
+    }
+
+    if (copy_to_user((int __user *)arg, &data, sizeof(data))) {
+        return -EFAULT;
+    }
+
+    return 0;
+}
 
 static int ds3231_open(struct inode *inodep, struct file *filep)
 {
@@ -161,10 +157,10 @@ static int ds3231_release(struct inode *inodep, struct file *filep)
 static struct file_operations fops = {
     .owner = THIS_MODULE,
     .open = ds3231_open,
-    // .unlocked_ioctl = ds3231_ioctl,
+    .unlocked_ioctl = ds3231_ioctl,
     .release = ds3231_release,
-    .read = driver_read,
-    .write = driver_write,
+    // .read = driver_read,
+    // .write = driver_write,
 };
 
 static int ds3231_probe(struct i2c_client *client, const struct i2c_device_id *id)
