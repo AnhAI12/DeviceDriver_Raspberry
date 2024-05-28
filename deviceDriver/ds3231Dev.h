@@ -7,6 +7,11 @@
 #define DS3231_MONTH_ADDR       0x05
 #define DS3231_YEAR_ADDR        0x06
 
+// IOCTL commands
+#define DS3231_IOCTL_MAGIC 'm'
+#define DS3231_IOCTL_WRITE _IOW(DS3231_IOCTL_MAGIC, 1, int)
+#define DS3231_IOCTL_READ _IOR(DS3231_IOCTL_MAGIC, 2, int)
+// #define DS3231_IOCTL_READ_Z _IOR(DS3231_IOCTL_MAGIC, 3, int)
 
 typedef struct 
 {

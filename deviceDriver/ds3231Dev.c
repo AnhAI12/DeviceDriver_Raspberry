@@ -20,8 +20,6 @@
 		4. Create ioclt
 */
 
-
-
 #include <linux/init.h>
 #include <linux/module.h>
 #include <linux/i2c.h>
@@ -31,7 +29,9 @@
 #include <linux/uaccess.h>
 #include<linux/cdev.h>	//assign the identifier to char device
 #include<linux/ioctl.h> //ioctl
+#include<linux/kernel.h>
 #include "ds3231Dev.h"
+
 
 #define DRIVER_NAME "ds3231_driver"
 #define CLASS_NAME "ds3231"
@@ -41,11 +41,6 @@
 #define DS3231_I2C_ADDR             0x68
 #define I2C_BUS_AVAILABLE           1
 
-// IOCTL commands
-#define DS3231_IOCTL_MAGIC 'm'
-#define DS3231_IOCTL_WRITE _IOW(DS3231_IOCTL_MAGIC, 1, int)
-#define DS3231_IOCTL_READ _IOR(DS3231_IOCTL_MAGIC, 2, int)
-// #define DS3231_IOCTL_READ_Z _IOR(DS3231_IOCTL_MAGIC, 3, int)
 
 static struct i2c_client *ds3231_client = NULL;        
 static struct i2c_adapter *etx_i2c_adapter     = NULL;  // I2C Adapter Structure - /dev/i2c-1
@@ -117,6 +112,26 @@ uint8_t hex2dec(uint8_t data)
 //     }
 //     return 1;
 // }
+
+static void ds3231_write( tm buff){
+    //second
+    i2c_smbus_write_byte_data(ds3231_client, DS3231_SEC_ADDR, buff.tm_sec);
+    //min
+    i2c_smbus_write_byte_data(ds3231_client, DS3231_MIN_ADDR, buff.tm_min);
+    //hour
+    i2c_smbus_write_byte_data(ds3231_client, DS3231_HOUR_ADDR, buff.tm_hour);
+    
+}
+
+static void ds3231_read( tm *buff){
+    //second
+    buff->tm_sec = hex2dec(i2c_smbus_read_byte_data(ds3231_client, DS3231_SEC_ADDR));
+    //min
+    buff->tm_min= hex2dec(i2c_smbus_read_byte_data(ds3231_client, DS3231_MIN_ADDR));
+    //hour
+    buff->tm_hour = hex2dec(i2c_smbus_read_byte_data(ds3231_client, DS3231_HOUR_ADDR));
+}
+
 static long ds3231_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
     int ret=-1;
@@ -125,19 +140,20 @@ static long ds3231_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 
     switch (cmd) {
         case DS3231_IOCTL_WRITE:
-            ret = copy_from_user(&buff, (tm*) arg, sizeof(tm))
-            data = ds3231_write(ds3231_client, 0);
+            ret = copy_from_user(&buff, (tm*) arg, sizeof(tm));
+            ds3231_write(buff);
             break;
         case DS3231_IOCTL_READ:
-            data = ds3231_read(ds3231_client, 1);
+            ds3231_read( &buff);
+            ret = copy_to_user((tm*)arg, &buff, sizeof(tm))
             break;
         default:
             return -EINVAL;
     }
 
-    if (copy_to_user((int __user *)arg, &data, sizeof(data))) {
-        return -EFAULT;
-    }
+    // if (copy_to_user((int __user *)arg, &data, sizeof(data))) {
+    //     return -EFAULT;
+    // }
 
     return 0;
 }
