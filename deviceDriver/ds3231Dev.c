@@ -47,7 +47,8 @@ static struct i2c_client *ds3231_client = NULL;
 static struct i2c_adapter *etx_i2c_adapter     = NULL;  // I2C Adapter Structure - /dev/i2c-1
 static struct class* ds3231_class = NULL;
 static struct device* ds3231_device = NULL;
-static struct cdev my_device;	
+static struct cdev my_device;
+struct acpi_device *etx_acpi_device;	
 static dev_t myDeviceNr;    //major vs minnor
 
 //union mode{};
@@ -235,7 +236,7 @@ static int __init ds3231_init(void)
 	printk("MyDeviceDriver - Device Nr %d was registered\n", myDeviceNr);
 
     //create Device Class
-    ds3231_class = class_create(THIS_MODULE, CLASS_NAME);
+    ds3231_class = class_create(CLASS_NAME);
     if (ds3231_class == NULL) {
         unregister_chrdev(myDeviceNr, DRIVER_NAME);
         printk(KERN_ERR "Failed to register device class\n");
@@ -263,7 +264,7 @@ static int __init ds3231_init(void)
     etx_i2c_adapter = i2c_get_adapter(I2C_BUS_AVAILABLE);
 
 	if(etx_i2c_adapter != NULL) {
-		ds3231_client = i2c_acpi_new_device(etx_i2c_adapter,0, &ds3231_i2c_board_info);
+		ds3231_client = i2c_acpi_new_device(ds3231_device,0, &ds3231_i2c_board_info);
 		if(ds3231_client != NULL) {
 			if(i2c_add_driver(&ds3231_driver) != -1) {
 				ret = 0;
