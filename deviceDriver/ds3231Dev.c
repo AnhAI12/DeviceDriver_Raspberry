@@ -9,6 +9,7 @@
 		https://www.kernel.org/doc/html/latest/i2c/writing-clients.html
 		https://linux-kernel-labs.github.io/refs/heads/master/labs/device_drivers.html
         https://www.kernel.org/doc/html/v4.12/driver-api/i2c.html
+        https://linux-kernel-labs.github.io/refs/heads/master/labs/device_model.html
 	Function:
 		i2c_smbus_write_byte_data(client, reg, value);
 		i2c_smbus_read_i2c_block_data(struct i2c_client *client,
@@ -48,7 +49,6 @@ static struct i2c_adapter *etx_i2c_adapter     = NULL;  // I2C Adapter Structure
 static struct class* ds3231_class = NULL;
 static struct device* ds3231_device = NULL;
 static struct cdev my_device;
-struct acpi_device *etx_acpi_device;	
 static dev_t myDeviceNr;    //major vs minnor
 
 //union mode{};
