@@ -227,7 +227,7 @@ static struct i2c_driver ds3231_driver = {
 
 static int __init ds3231_init(void)
 {
-    printk(KERN_INFO "Initializing DS3231 driver\n");
+    printk(KERN_INFO "Initializing DS3231 driver\n");   //abc
     int ret = -1;
     // Allocate Device Nr
     if ( alloc_chrdev_region(&myDeviceNr, 0, 1, DRIVER_NAME) < 0) {
